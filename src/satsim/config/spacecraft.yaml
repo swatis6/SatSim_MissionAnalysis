@@ -1,0 +1,8 @@
+name: TesterSat
+initial_state:
+  r: [6578137.0, 0.0, 0.0]   # 200 km altitude
+  v: [0.0, 7784.3, 0.0]    #v for cicular orbit at altitude
+mass_props:
+  mass: 4.0
+  cd: 2.2
+  area: 0.03

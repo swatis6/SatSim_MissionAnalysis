@@ -1,0 +1,40 @@
+#Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+
+#Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+#IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+#OS
+.DS_Store
+Thumbs.db
+
+#Project-specific outputs
+data/logs/
+data/outputs/
+data/plots/*.png
+data/plots/*.pdf
+
+#Keep the plots folder in the repo but ignore its contents
+!data/plots/.gitkeep
+
+#Jupyter
+.ipynb_checkpoints/
+
+#Secrets
+*.env
+secrets.yaml
