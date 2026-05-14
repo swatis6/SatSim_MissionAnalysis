@@ -1,5 +1,5 @@
 import numpy as np
-from dynamics.forces import total_acceleration
+from satsim.dynamics.forces import total_acceleration
 
 def rk4_step(spacecraft, environment, dt):
     #fixed step rk4 to start

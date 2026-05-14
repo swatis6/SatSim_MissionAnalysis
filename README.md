@@ -88,7 +88,7 @@ Structure:
 uv sync
 
 # run simulation
-uv run python src/satsim/main.py
+uv run satsim
 
 # run tests
 uv run pytest

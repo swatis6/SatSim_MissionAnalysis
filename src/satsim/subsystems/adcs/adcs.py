@@ -1,6 +1,6 @@
-from subsystems.adcs.controller import Controller
-from subsystems.adcs.estimator import Estimator 
-from subsystems.adcs.sensors import Sensors
+from satsim.subsystems.adcs.controller import Controller
+from satsim.subsystems.adcs.estimator import Estimator 
+from satsim.subsystems.adcs.sensors import Sensors
 
 class ADCS:
     def __init__(self):
