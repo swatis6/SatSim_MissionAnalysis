@@ -1,5 +1,5 @@
 import numpy as np
-from satsim.simulation.propagator import rk4_step
+from simulation.propagator import rk4_step
 
 class Simulator:
     def __init__(self, spacecraft, environment, mission):
@@ -32,3 +32,4 @@ class Simulator:
                 print(f"Decayed at t={self.time:.1f} s")
                 break
             self.step(dt)
+            

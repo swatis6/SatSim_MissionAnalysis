@@ -1,6 +1,6 @@
-from satsim.spacecraft.state import State
-from satsim.spacecraft.massprops import MassProps
-from satsim.spacecraft.statusflags import StatusFlags
+from spacecraft.state import State
+from spacecraft.massprops import MassProps
+from spacecraft.statusflags import StatusFlags
 
 class Spacecraft:
     def __init__(self, config):

@@ -6,7 +6,6 @@ J2       = 1.08262668e-3
 
 class GravityModel:
     def __init__(self, config):
-        # config is a dict from yaml; pull what you need with defaults
         self.use_j2 = config.get("use_j2", True)
 
     def acceleration(self, r):

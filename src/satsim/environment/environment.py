@@ -1,6 +1,6 @@
-from satsim.environment.gravity import GravityModel
-from satsim.environment.atmosphere import AtmosphereModel
-from satsim.environment.earth import EarthModel
+from environment.gravity import GravityModel
+from environment.atmosphere import AtmosphereModel
+from environment.earth import EarthModel
 
 class Environment:
     def __init__(self, config):

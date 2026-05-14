@@ -22,10 +22,6 @@ def drag_acceleration(spacecraft, environment):
     return -0.5 * rho * v_rel_norm * v_rel / BC
 
 def total_acceleration(spacecraft, environment):
-    """
-    Sum of all accelerations acting on the spacecraft.
-    This is the function the integrator calls.
-    """
     a = gravitational_acceleration(spacecraft, environment)
     a += drag_acceleration(spacecraft, environment)
     return a
