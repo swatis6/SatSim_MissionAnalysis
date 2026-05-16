@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from simulation.simulator import Simulator
-from spacecraft.spacecraft import Spacecraft
-from environment.environment import Environment
-from mission.mission import Mission
+from satsim.simulation.simulator import Simulator
+from satsim.spacecraft.spacecraft import Spacecraft
+from satsim.environment.environment import Environment
+from satsim.mission.mission import Mission
 
 CONFIG_DIR = Path(__file__).parent / "config"
 

@@ -1,5 +1,5 @@
 import numpy as np
-from environment.gravity import GravityModel, MU_EARTH
+from satsim.environment.gravity import GravityModel, MU_EARTH
 
 def test_two_body_acceleration_magnitude():
     #at earth surface gravity should be 9.81 m/s^2.

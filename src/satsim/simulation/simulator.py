@@ -1,5 +1,5 @@
 import numpy as np
-from simulation.propagator import rk4_step
+from satsim.simulation.propagator import rk4_step
 
 class Simulator:
     def __init__(self, spacecraft, environment, mission):

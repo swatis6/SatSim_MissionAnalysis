@@ -85,7 +85,10 @@ Structure:
 
 ```bash
 # install dependencies
-pip install -r requirements.txt
+uv sync
 
 # run simulation
-python main.py
+uv run satsim
+
+# run tests
+uv run pytest
