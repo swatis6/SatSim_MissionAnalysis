@@ -1,8 +1,5 @@
 import numpy as np
-
-MU_EARTH = 3.986004418e14  
-R_EARTH  = 6.378137e6     
-J2       = 1.08262668e-3   
+from satsim.utilities.consts import MU_EARTH, R_EARTH, J2
 
 class GravityModel:
     def __init__(self, config):

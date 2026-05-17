@@ -25,8 +25,8 @@ def main():
 
     sim = Simulator(sc, env, mission)
 
-    dt    = mission_config.get("dt", 10.0)
-    t_end = mission_config.get("duration", 54000.0)
+    dt    = mission_config.get("dt")
+    t_end = mission_config.get("duration")
 
     sim.run(t_end, dt)
     print(f"Simulation complete. {len(sim.history['t'])} steps recorded.")

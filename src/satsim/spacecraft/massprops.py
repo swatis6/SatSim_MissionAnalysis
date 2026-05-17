@@ -1,10 +1,10 @@
 class MassProps:
     def __init__(self, config):
-        self.mass         = config.get("mass", 4.0)         # kg (3U cubesat ~4kg)
-        self.cd           = config.get("cd", 2.2)           # drag coefficient
-        self.area         = config.get("area", 0.03)        # m^2 (3U face area)
+        self.mass         = config.get("mass")         # kg (3U cubesat ~4kg)
+        self.cd           = config.get("cd")           # drag coefficient
+        self.area         = config.get("area")        # m^2 (3U face area)
         # inertia tensor for attitude dynamics
-        self.inertia      = config.get("inertia", None)
+        self.inertia      = config.get("inertia")
 
     @property
     def ballistic_coefficient(self):
