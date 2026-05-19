@@ -1,4 +1,5 @@
 import numpy as np
+from satsim.utilities.consts import R_EARTH
 
 class State:
     def __init__(self, r, v,
@@ -12,5 +13,4 @@ class State:
 
     @property
     def altitude(self):
-        R_EARTH = 6.378137e6
         return np.linalg.norm(self.r) - R_EARTH

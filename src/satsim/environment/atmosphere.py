@@ -1,6 +1,5 @@
 import numpy as np
-
-R_EARTH = 6.378137e6  # m
+from satsim.utilities.consts import R_EARTH
 
 class AtmosphereModel:
     def __init__(self, config):
