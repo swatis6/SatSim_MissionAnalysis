@@ -76,15 +76,20 @@ Structure:
 - - `coords.py`
 - - `math.py`
 - - `noisemodels.py`
-- `visualization`
+- `output/`
+- - `output.py`
+- - `visualizer.py`
 - `main.py`
 
 ---
 
 ## How to Run
 
-```bash
-# install dependencies
+```bashuv 
+#install uv and restart terminal
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# install dependencies and create .venv
 uv sync
 
 # run simulation

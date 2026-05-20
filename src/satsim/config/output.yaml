@@ -1,0 +1,8 @@
+output:
+  visualization:
+    altitude: true
+    orbit_2d: true
+    orbit_3d: true
+    ground_track: false   # needs ECI to ECEF, leave off until coords.py is done
+    save_dir: "data/plots"
+    show: true            # pop up windows, set false for headless/CI
