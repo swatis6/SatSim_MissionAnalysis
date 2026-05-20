@@ -32,4 +32,7 @@ class Simulator:
                 print(f"Decayed at t={self.time:.1f} s")
                 break
             self.step(dt)
+        
+        for key in self.history:
+            self.history[key] = np.array(self.history[key])
             

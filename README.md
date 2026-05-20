@@ -76,7 +76,9 @@ Structure:
 - - `coords.py`
 - - `math.py`
 - - `noisemodels.py`
-- `visualization`
+- `output/`
+- - `output.py`
+- - `visualizer.py`
 - `main.py`
 
 ---
