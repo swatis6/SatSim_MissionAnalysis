@@ -340,3 +340,299 @@ class AtmosphereModel:
             H = self.scale_height
 
         return self.rho0 * np.exp(-altitude / H)
+
+
+# ---------------------------------------------------------------------------
+# Species densities — Jacchia 1977 (port of j77sri.m by Huestis/SRI/Mahooti)
+# ---------------------------------------------------------------------------
+
+_AVOGADRO = 6.02214076e23   # molecules / mol
+
+# Molecular weights [g/mol]
+_WM0  = 28.96
+_WMN2 = 28.0134
+_WMO2 = 31.9988
+_WMO  = 15.9994
+_WMAR = 39.948
+_WMHE = 4.0026
+_WMH  = 1.0079
+
+# Sea-level volume fractions
+_QN2 = 0.78110
+_QO2 = 0.20955
+_QAR = 0.009343
+_QHE = 0.000005242
+
+_PI2 = math.pi / 2.0
+
+
+@dataclass
+class SpeciesDensities:
+    """
+    Number densities [cm⁻³] and derived quantities at one altitude.
+
+    Attributes
+    ----------
+    altitude_km : float
+    temperature_K : float
+    N2, O2, O, Ar, He, H : float   number densities [cm⁻³]
+    total : float                   total number density CM [cm⁻³]
+    molecular_weight : float        mean molecular weight WM [g/mol]
+    """
+    altitude_km:      float
+    temperature_K:    float
+    N2:               float
+    O2:               float
+    O:                float
+    Ar:               float
+    He:               float
+    H:                float
+    total:            float
+    molecular_weight: float
+
+    @property
+    def density_kg_m3(self) -> float:
+        """Total mass density [kg/m³], suitable for drag calculations."""
+        return self.total * self.molecular_weight * 1e3 / _AVOGADRO
+
+
+def j77sri(Tinf: float, max_alt_km: int = 2500) -> list[SpeciesDensities]:
+    """
+    Jacchia 1977 atmosphere model (port of j77sri.m, SRI International).
+
+    Given the exospheric temperature, returns number densities of N2, O2,
+    O, Ar, He, H [cm⁻³] and temperature [K] at every integer km from 0 to
+    max_alt_km. Use exospheric_temperature() to compute Tinf first.
+
+    Below 86 km the US Standard Atmosphere 1976 is used; above 90 km the
+    Jacchia 1977 diffusive-equilibrium model takes over, with empirical
+    corrections to O2 and O. H atoms are included when max_alt_km >= 500.
+
+    Parameters
+    ----------
+    Tinf : float
+        Exospheric temperature T-infinity [K].
+    max_alt_km : int
+        Highest altitude to compute [km]. Default 2500.
+
+    Returns
+    -------
+    list of SpeciesDensities, index i = altitude in km.
+    """
+    maxz = max_alt_km
+
+    T   = [0.0] * (maxz + 1)
+    CN2 = [0.0] * (maxz + 1)
+    CO2 = [0.0] * (maxz + 1)
+    CO  = [0.0] * (maxz + 1)
+    CAr = [0.0] * (maxz + 1)
+    CHe = [0.0] * (maxz + 1)
+    CH  = [0.0] * (maxz + 1)
+    CM  = [0.0] * (maxz + 1)
+    WM  = [0.0] * (maxz + 1)
+
+    E5M = [0.0] * 11   # polynomial mean molecular weight, iz = 90..100
+    E6P = [0.0] * 11   # number density seed,             iz = 90..100
+
+    for iz in range(maxz + 1):
+        z   = float(iz)
+        CH[iz] = 0.0
+
+        # ----------------------------------------------------------------
+        # 0–85 km: US Standard Atmosphere 1976
+        # ----------------------------------------------------------------
+        if iz <= 85:
+            h = z * 6369.0 / (z + 6369.0)   # geopotential altitude [km]
+
+            if iz <= 11:
+                hbase, pbase, tbase, tgrad = 0.0,  1.0,          288.15, -6.5
+            elif iz <= 20:
+                hbase, pbase, tbase, tgrad = 11.0, 2.233611e-1,  216.65,  0.0
+            elif iz <= 32:
+                hbase, pbase, tbase, tgrad = 20.0, 5.403295e-2,  216.65,  1.0
+            elif iz <= 47:
+                hbase, pbase, tbase, tgrad = 32.0, 8.5666784e-3, 228.65,  2.8
+            elif iz <= 51:
+                hbase, pbase, tbase, tgrad = 47.0, 1.0945601e-3, 270.65,  0.0
+            elif iz <= 71:
+                hbase, pbase, tbase, tgrad = 51.0, 6.6063531e-4, 270.65, -2.8
+            else:
+                hbase, pbase, tbase, tgrad = 71.0, 3.9046834e-5, 214.65, -2.0
+
+            if tgrad == 0.0:
+                T[iz] = tbase
+                x = math.exp(-34.163195 * (h - hbase) / tbase)
+            else:
+                T[iz] = tbase + tgrad * (h - hbase)
+                x = (tbase / T[iz]) ** (34.163195 / tgrad)
+
+            CM[iz] = 2.547e19 * (288.15 / T[iz]) * pbase * x
+            y  = 10.0 ** (-3.7469 + (iz - 85) * (0.226434 - (iz - 85) * 5.945e-3))
+            xf = 1.0 - y
+            WM[iz]  = _WM0 * xf
+            CN2[iz] = _QN2 * CM[iz]
+            CO[iz]  = 2.0 * y * CM[iz]
+            CO2[iz] = (xf * _QO2 - y) * CM[iz]
+            CAr[iz] = _QAR * CM[iz]
+            CHe[iz] = _QHE * CM[iz]
+
+        # ----------------------------------------------------------------
+        # 86–89 km: transition zone (oxygen dissociation ramp)
+        # ----------------------------------------------------------------
+        elif iz <= 89:
+            T[iz] = 188.0
+            y = 10.0 ** (-3.7469 + (iz - 85) * (0.226434 - (iz - 85) * 5.945e-3))
+            WM[iz] = _WM0 * (1.0 - y)
+            CM[iz] = CM[iz-1] * (T[iz-1] / T[iz]) * (WM[iz] / WM[iz-1]) * math.exp(
+                -0.5897446 * (
+                    (WM[iz-1] / T[iz-1]) * (1.0 + (iz - 1) / 6356.766) ** (-2)
+                    + (WM[iz]  / T[iz])  * (1.0 +  iz       / 6356.766) ** (-2)
+                )
+            )
+            xf      = 1.0 - y
+            WM[iz]  = _WM0 * xf
+            CN2[iz] = _QN2 * CM[iz]
+            CO[iz]  = 2.0 * y * CM[iz]
+            CO2[iz] = (xf * _QO2 - y) * CM[iz]
+            CAr[iz] = _QAR * CM[iz]
+            CHe[iz] = _QHE * CM[iz]
+
+        # ----------------------------------------------------------------
+        # 90+ km: Jacchia 1977 diffusive equilibrium
+        # ----------------------------------------------------------------
+        else:
+            # Temperature profile
+            if iz == 90 or Tinf < 188.1:
+                T[iz] = 188.0
+            else:
+                xv  = 0.0045 * (Tinf - 188.0)
+                Tx  = 188.0 + 110.5 * math.log(xv + math.sqrt(xv * xv + 1.0))
+                Gx  = _PI2 * 1.9 * (Tx - 188.0) / (125.0 - 90.0)
+                if iz <= 125:
+                    T[iz] = Tx + ((Tx - 188.0) / _PI2) * math.atan(
+                        (Gx / (Tx - 188.0)) * (iz - 125.0)
+                        * (1.0 + 1.7 * ((iz - 125.0) / (iz - 90.0)) ** 2)
+                    )
+                else:
+                    T[iz] = Tx + ((Tinf - Tx) / _PI2) * math.atan(
+                        (Gx / (Tinf - Tx)) * (iz - 125.0)
+                        * (1.0 + 5.5e-5 * (iz - 125.0) ** 2)
+                    )
+
+            # Number densities
+            if iz <= 100:
+                idx = iz - 90
+                E5M[idx] = 28.89122 + idx * (
+                    -2.83071e-2 + idx * (
+                        -6.59924e-3 + idx * (
+                            -3.39574e-4 + idx * (6.19256e-5 + idx * (-1.84796e-6))
+                        )
+                    )
+                )
+                if iz == 90:
+                    E6P[0] = 7.145e13 * T[90]
+                else:
+                    G0 = (1.0 + (iz - 1) / 6356.766) ** (-2)
+                    G1 = (1.0 +  iz      / 6356.766) ** (-2)
+                    E6P[idx] = E6P[idx - 1] * math.exp(
+                        -0.5897446 * (G1 * E5M[idx] / T[iz] + G0 * E5M[idx - 1] / T[iz - 1])
+                    )
+                x       = E5M[idx] / _WM0
+                y       = E6P[idx] / T[iz]
+                CN2[iz] = _QN2 * y * x
+                CO[iz]  = 2.0 * (1.0 - x) * y
+                CO2[iz] = (x * (1.0 + _QO2) - 1.0) * y
+                CAr[iz] = _QAR * y * x
+                CHe[iz] = _QHE * y * x
+            else:
+                G0 = (1.0 + (iz - 1) / 6356.766) ** (-2)
+                G1 = (1.0 +  iz      / 6356.766) ** (-2)
+                x       = 0.5897446 * (G1 / T[iz] + G0 / T[iz - 1])
+                y       = T[iz - 1] / T[iz]
+                CN2[iz] = CN2[iz - 1] * y * math.exp(-_WMN2 * x)
+                CO2[iz] = CO2[iz - 1] * y * math.exp(-_WMO2 * x)
+                CO[iz]  = CO[iz - 1]  * y * math.exp(-_WMO  * x)
+                CAr[iz] = CAr[iz - 1] * y * math.exp(-_WMAR * x)
+                CHe[iz] = CHe[iz - 1] * (y ** 0.62) * math.exp(-_WMHE * x)
+
+    # ----------------------------------------------------------------
+    # Empirical corrections to O2 and O (Jacchia 1977)
+    # ----------------------------------------------------------------
+    for iz in range(90, maxz + 1):
+        CO2[iz] *= 10.0 ** (-0.07 * (1.0 + math.tanh(0.18 * (iz - 111.0))))
+        CO[iz]  *= 10.0 ** (-0.24 * math.exp(-0.009 * (iz - 97.7) ** 2))
+        CM[iz]   = CN2[iz] + CO2[iz] + CO[iz] + CAr[iz] + CHe[iz] + CH[iz]
+        if CM[iz] > 0.0:
+            WM[iz] = (
+                _WMN2 * CN2[iz] + _WMO2 * CO2[iz] + _WMO  * CO[iz]
+                + _WMAR * CAr[iz] + _WMHE * CHe[iz] + _WMH * CH[iz]
+            ) / CM[iz]
+
+    # ----------------------------------------------------------------
+    # H atom densities (Jacchia 1977, only when maxz >= 500)
+    # ----------------------------------------------------------------
+    if maxz >= 500:
+        phid00 = 10.0 ** (6.9 + 28.9 * Tinf ** (-0.25)) / 2e20 * 5.24e2
+        H_500  = 10.0 ** (-0.06 + 28.9 * Tinf ** (-0.25))
+
+        for iz in range(150, maxz + 1):
+            phid0  = phid00 / math.sqrt(T[iz])
+            WM[iz] = _WMH * 0.5897446 * (1.0 + iz / 6356.766) ** (-2) / T[iz] + phid0
+            CM[iz] = CM[iz] * phid0
+
+        y = WM[150]; WM[150] = 0.0
+        for iz in range(151, maxz + 1):
+            x = WM[iz - 1] + (y + WM[iz])
+            y = WM[iz]
+            WM[iz] = x
+
+        for iz in range(150, maxz + 1):
+            WM[iz] = math.exp(WM[iz]) * (T[iz] / T[150]) ** 0.75
+            CM[iz] = WM[iz] * CM[iz]
+
+        y = CM[150]; CM[150] = 0.0
+        for iz in range(151, maxz + 1):
+            x = CM[iz - 1] + 0.5 * (y + CM[iz])
+            y = CM[iz]
+            CM[iz] = x
+
+        for iz in range(150, maxz + 1):
+            CH[iz] = (WM[500] / WM[iz]) * (H_500 - (CM[iz] - CM[500]))
+
+        for iz in range(150, maxz + 1):
+            CM[iz] = CN2[iz] + CO2[iz] + CO[iz] + CAr[iz] + CHe[iz] + CH[iz]
+            if CM[iz] > 0.0:
+                WM[iz] = (
+                    _WMN2 * CN2[iz] + _WMO2 * CO2[iz] + _WMO  * CO[iz]
+                    + _WMAR * CAr[iz] + _WMHE * CHe[iz] + _WMH * CH[iz]
+                ) / CM[iz]
+
+    return [
+        SpeciesDensities(
+            altitude_km=float(iz),
+            temperature_K=T[iz],
+            N2=CN2[iz], O2=CO2[iz], O=CO[iz],
+            Ar=CAr[iz], He=CHe[iz], H=CH[iz],
+            total=CM[iz],
+            molecular_weight=WM[iz],
+        )
+        for iz in range(maxz + 1)
+    ]
+
+
+def species_at_altitude(Tinf: float, altitude_km: float) -> SpeciesDensities:
+    """
+    Return species densities at a single altitude.
+
+    Computes the full Jacchia 1977 profile from 0 km up to altitude_km,
+    then returns the entry at the requested altitude.
+
+    Parameters
+    ----------
+    Tinf : float
+        Exospheric temperature [K] from exospheric_temperature().
+    altitude_km : float
+        Target altitude [km].
+    """
+    alt = max(0, int(altitude_km))
+    return j77sri(Tinf, max_alt_km=alt)[alt]
